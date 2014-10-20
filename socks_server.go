@@ -6,6 +6,7 @@ import (
     "bufio"
     "log"
     "net"
+    "os"
     "encoding/binary"
 )
 
@@ -30,9 +31,21 @@ func HandleCon(c net.Conn) {
         log.Fatal(err)
     }
 
-    // connect the tubes
-    go io.Copy(remCon, req.localConn)
-    go io.Copy(req.localConn, remCon)
+    var localReader, remoteReader io.Reader
+    // if non-tls, tee to stdout
+    if req.port == 80 {
+        // localReader is a Reader that acts like req.localConn,
+        // except it also Writes to os.Stdout when we Read from it.
+        localReader = io.TeeReader(req.localConn, os.Stdout)
+        remoteReader = io.TeeReader(remCon, os.Stdout)
+    } else {
+        // if encrypted, don't tee to stdout
+        localReader = req.localConn
+        remoteReader = remCon
+    }
+
+    go io.Copy(remCon, localReader)
+    go io.Copy(req.localConn, remoteReader)
 }
 
 type command int

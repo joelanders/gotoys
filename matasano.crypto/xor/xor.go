@@ -7,6 +7,7 @@ import (
     "io/ioutil"
     "strings"
     "strconv"
+    "encoding/base64"
 )
 
 func XorByteSlice(b byte, s []byte) []byte {
@@ -220,3 +221,19 @@ func HexXor(key, text string) string {
     n := hex.Encode(buf, cBin)
     return string(buf[:n])
 }
+
+func BytesFromFile(f string) []byte {
+    s, err := ioutil.ReadFile(f)
+    if err != nil {
+        panic(err)
+    }
+    
+    //todo: decodestring is more conv.
+    bs, err := base64.StdEncoding.DecodeString(string(s))
+    if err != nil {
+        panic(err)
+    }
+
+    return bs
+}
+

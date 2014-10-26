@@ -1,8 +1,6 @@
 package main
 import (
     "fmt"
-    "io/ioutil"
-    "encoding/base64"
     "math"
     "sort"
     "./xor"
@@ -12,7 +10,7 @@ func main() {
     fmt.Println(hamByte(2, 2))
     fmt.Println(hamString("this is a test", "wokka wokka!!!"))
 
-    bs := bytesFromFile("6.txt")
+    bs := xor.BytesFromFile("6.txt")
     fmt.Println(len(bs))
 
 //    tryKeySizes(2, 40, bs)
@@ -88,21 +86,6 @@ func tryKeySizes(start, end int, text []byte) {
     for i := start; i <= end; i++ {
         fmt.Printf("%d: %f\n", i, tryKeySize(i, text))
     }
-}
-
-func bytesFromFile(f string) []byte {
-    s, err := ioutil.ReadFile(f)
-    if err != nil {
-        panic(err)
-    }
-    
-    //todo: decodestring is more conv.
-    bs, err := base64.StdEncoding.DecodeString(string(s))
-    if err != nil {
-        panic(err)
-    }
-
-    return bs
 }
 
 func transpose(n int, bs []byte) [][]byte {

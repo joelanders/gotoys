@@ -32,35 +32,35 @@ func main() {
 //    }
 //    dst1 := make([]byte, 32)
 //
-//    encrypter := NewCBCEncrypter(block)
+//    encrypter := NewECBEncrypter(block)
 //    encrypter.CryptBlocks(dst1, src1)
 //    fmt.Println(hex.EncodeToString(dst1))
 
     dst := make([]byte, len(bs))
-    decrypter := NewCBCDecrypter(block)
+    decrypter := NewECBDecrypter(block)
     decrypter.CryptBlocks(dst, bs)
     fmt.Println(string(dst))
 
 }
 
-func NewCBCEncrypter(b cipher.Block) CBCEncrypter {
-    return CBCEncrypter{b}
+func NewECBEncrypter(b cipher.Block) ECBEncrypter {
+    return ECBEncrypter{b}
 }
 
-func NewCBCDecrypter(b cipher.Block) CBCDecrypter {
-    return CBCDecrypter{b}
+func NewECBDecrypter(b cipher.Block) ECBDecrypter {
+    return ECBDecrypter{b}
 }
 
-type CBCEncrypter struct {
+type ECBEncrypter struct {
     cipher.Block
 }
 
-type CBCDecrypter struct {
+type ECBDecrypter struct {
     cipher.Block
 }
 
 //todo dupes
-func (crypter CBCEncrypter) CryptBlocks(dst, src []byte) {
+func (crypter ECBEncrypter) CryptBlocks(dst, src []byte) {
     bs := crypter.BlockSize()
     if len(src) % crypter.BlockSize() != 0 {
         panic("bad src length")
@@ -71,7 +71,7 @@ func (crypter CBCEncrypter) CryptBlocks(dst, src []byte) {
     }
 }
 
-func (crypter CBCDecrypter) CryptBlocks(dst, src []byte) {
+func (crypter ECBDecrypter) CryptBlocks(dst, src []byte) {
     bs := crypter.BlockSize()
     if len(src) % crypter.BlockSize() != 0 {
         panic("bad src length")

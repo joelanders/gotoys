@@ -4,6 +4,7 @@ import (
     "crypto/aes"
     "crypto/cipher"
     //"encoding/hex"
+    "encoding/base64"
     "./xor" //todo move stuff
 )
 
@@ -40,6 +41,12 @@ func main() {
     decrypter := NewECBDecrypter(block)
     decrypter.CryptBlocks(dst, bs)
     fmt.Println(string(dst))
+
+    dst2 := make([]byte, len(bs))
+    encrypter := NewECBEncrypter(block)
+    encrypter.CryptBlocks(dst2, dst)
+    fmt.Println(base64.StdEncoding.EncodeToString(dst2))
+
 
 }
 

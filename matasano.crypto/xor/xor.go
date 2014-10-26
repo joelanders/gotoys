@@ -18,6 +18,17 @@ func XorByteSlice(b byte, s []byte) []byte {
     return result
 }
 
+func XorSlices(a, b []byte) []byte {
+    if len(a) != len(b) {
+        panic("unequal lengths")
+    }
+    result := make([]byte, len(a))
+    for i, _ := range(a) {
+        result[i] = a[i] ^ b[i]
+    }
+    return result
+}
+
 func XorByteHex(b byte, h string) []byte {
     sl, err := hex.DecodeString(h)
     if err != nil {

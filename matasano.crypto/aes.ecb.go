@@ -2,10 +2,10 @@ package main
 import (
     "fmt"
     "crypto/aes"
-    "crypto/cipher"
     //"encoding/hex"
     "encoding/base64"
     "./xor" //todo move stuff
+    "./ecb"
 )
 
 func main() {
@@ -38,53 +38,12 @@ func main() {
 //    fmt.Println(hex.EncodeToString(dst1))
 
     dst := make([]byte, len(bs))
-    decrypter := NewECBDecrypter(block)
+    decrypter := ecb.NewECBDecrypter(block)
     decrypter.CryptBlocks(dst, bs)
     fmt.Println(string(dst))
 
     dst2 := make([]byte, len(bs))
-    encrypter := NewECBEncrypter(block)
+    encrypter := ecb.NewECBEncrypter(block)
     encrypter.CryptBlocks(dst2, dst)
     fmt.Println(base64.StdEncoding.EncodeToString(dst2))
-
-
-}
-
-func NewECBEncrypter(b cipher.Block) ECBEncrypter {
-    return ECBEncrypter{b}
-}
-
-func NewECBDecrypter(b cipher.Block) ECBDecrypter {
-    return ECBDecrypter{b}
-}
-
-type ECBEncrypter struct {
-    cipher.Block
-}
-
-type ECBDecrypter struct {
-    cipher.Block
-}
-
-//todo dupes
-func (crypter ECBEncrypter) CryptBlocks(dst, src []byte) {
-    bs := crypter.BlockSize()
-    if len(src) % crypter.BlockSize() != 0 {
-        panic("bad src length")
-    }
-
-    for i := 0; i < len(src); i = i + bs {
-        crypter.Encrypt(dst[i:i+bs], src[i:i+bs])
-    }
-}
-
-func (crypter ECBDecrypter) CryptBlocks(dst, src []byte) {
-    bs := crypter.BlockSize()
-    if len(src) % crypter.BlockSize() != 0 {
-        panic("bad src length")
-    }
-
-    for i := 0; i < len(src); i = i + bs {
-        crypter.Decrypt(dst[i:i+bs], src[i:i+bs])
-    }
 }

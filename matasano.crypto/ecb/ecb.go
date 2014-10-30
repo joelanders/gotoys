@@ -1,24 +1,10 @@
-package main
+package ecb
 import (
-    "fmt"
     "io/ioutil"
     "strings"
     "encoding/hex"
+    "crypto/cipher"
 )
-
-func main() {
-    hexes := ReadHexesFromFile("8.txt")
-    fmt.Println(len(hexes))
-
-    bytes := HexesToBytes(hexes)
-    fmt.Println(len(bytes))
-
-    for _, cipher := range(bytes) {
-        if CheckDupeBlock(cipher, 16) {
-            fmt.Println(hex.EncodeToString(cipher))
-        }
-    }
-}
 
 func ReadHexesFromFile(filename string) []string {
     bs, err := ioutil.ReadFile(filename)
@@ -57,4 +43,43 @@ func CheckDupeBlock(bs []byte, size int) bool {
         seen[string(block)] = true
     }
     return false
+}
+
+func NewECBEncrypter(b cipher.Block) ECBEncrypter {
+    return ECBEncrypter{b}
+}
+
+func NewECBDecrypter(b cipher.Block) ECBDecrypter {
+    return ECBDecrypter{b}
+}
+
+type ECBEncrypter struct {
+    cipher.Block
+}
+
+type ECBDecrypter struct {
+    cipher.Block
+}
+
+//todo dupes
+func (crypter ECBEncrypter) CryptBlocks(dst, src []byte) {
+    bs := crypter.BlockSize()
+    if len(src) % crypter.BlockSize() != 0 {
+        panic("bad src length")
+    }
+
+    for i := 0; i < len(src); i = i + bs {
+        crypter.Encrypt(dst[i:i+bs], src[i:i+bs])
+    }
+}
+
+func (crypter ECBDecrypter) CryptBlocks(dst, src []byte) {
+    bs := crypter.BlockSize()
+    if len(src) % crypter.BlockSize() != 0 {
+        panic("bad src length")
+    }
+
+    for i := 0; i < len(src); i = i + bs {
+        crypter.Decrypt(dst[i:i+bs], src[i:i+bs])
+    }
 }

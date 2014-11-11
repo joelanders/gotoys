@@ -1,5 +1,6 @@
 package pkcs7
 import (
+    "errors"
 )
 
 // ought this to write from src to a
@@ -9,9 +10,6 @@ func Pad(bs []byte, mult int) []byte {
     length := len(bs)
 
     rem := length % mult
-    if rem == 0 {
-        return bs
-    }
 
     diff := mult - rem
     res := make([]byte, length + diff)
@@ -24,4 +22,15 @@ func Pad(bs []byte, mult int) []byte {
 
     return res
 
+}
+
+//todo: should i give mult?
+//todo: be more strict
+func Unpad(bs []byte, mult int) ([]byte, error) {
+    if len(bs) % mult != 0 {
+        return []byte{}, errors.New("not blocksize multiple")
+    }
+
+    padLen := int(bs[len(bs)-1])
+    return bs[0:len(bs) - padLen], nil
 }

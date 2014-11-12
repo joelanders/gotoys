@@ -26,11 +26,17 @@ func Pad(bs []byte, mult int) []byte {
 
 //todo: should i give mult?
 //todo: be more strict
-func Unpad(bs []byte, mult int) ([]byte, error) {
-    if len(bs) % mult != 0 {
-        return []byte{}, errors.New("not blocksize multiple")
-    }
+func Unpad(bs []byte) ([]byte, error) {
+//    if len(bs) % mult != 0 {
+//        return []byte{}, errors.New("not blocksize multiple")
+//    }
 
     padLen := int(bs[len(bs)-1])
+    for _, c := range(bs[len(bs) - padLen : len(bs)]) {
+        if c != byte(padLen) {
+            return []byte{}, errors.New("malformed padding")
+        }
+    }
+
     return bs[0:len(bs) - padLen], nil
 }

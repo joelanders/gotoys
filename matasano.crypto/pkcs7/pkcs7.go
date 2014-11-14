@@ -32,6 +32,12 @@ func Unpad(bs []byte) ([]byte, error) {
 //    }
 
     padLen := int(bs[len(bs)-1])
+    if padLen == 0 {
+        return []byte{}, errors.New("malformed padding")
+    }
+    if padLen > len(bs) {
+        return []byte{}, errors.New("malformed padding")
+    }
     for _, c := range(bs[len(bs) - padLen : len(bs)]) {
         if c != byte(padLen) {
             return []byte{}, errors.New("malformed padding")

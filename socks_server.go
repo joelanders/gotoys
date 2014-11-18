@@ -10,20 +10,20 @@ import (
     "encoding/binary"
 )
 
-func HandleCon(c net.Conn) {
+func HandleCon(locCon net.Conn) {
     // application sends us a SOCKS4 request
-    req, err := readConnectRequest(c)
+    req, err := readConnectRequest(locCon)
     if err != nil {
         log.Fatal(err)
     }
 
     // we send them back an "approved" response
-    err = sendConnectResp(c)
+    err = sendConnectResp(locCon)
     if err != nil {
         log.Fatal(err)
     }
 
-    fmt.Println(req.String())
+    log.Println(req.String())
 
     // dial the requested destination
     remCon, err := net.Dial("tcp", req.DestAddr())
@@ -32,20 +32,20 @@ func HandleCon(c net.Conn) {
     }
 
     var localReader, remoteReader io.Reader
-    // if non-tls, tee to stdout
+    // if plaintext, tee to stdout
     if req.port == 80 {
-        // localReader is a Reader that acts like req.localConn,
+        // localReader is a Reader that acts like locCon,
         // except it also Writes to os.Stdout when we Read from it.
-        localReader = io.TeeReader(req.localConn, os.Stdout)
+        localReader = io.TeeReader(locCon, os.Stdout)
         remoteReader = io.TeeReader(remCon, os.Stdout)
     } else {
         // if encrypted, don't tee to stdout
-        localReader = req.localConn
+        localReader = locCon
         remoteReader = remCon
     }
 
     go io.Copy(remCon, localReader)
-    go io.Copy(req.localConn, remoteReader)
+    go io.Copy(locCon, remoteReader)
 }
 
 type command int
@@ -121,6 +121,7 @@ func main() {
         if err != nil {
             log.Fatal(err)
         }
+        defer conn.Close()
         go HandleCon(conn)
     }
 }

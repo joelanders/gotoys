@@ -3,24 +3,27 @@ package main
 import (
     "fmt"
     "io"
-    "bufio"
     "log"
     "net"
     "os"
     "encoding/binary"
+    "sync"
+    "errors"
 )
 
 func HandleCon(locCon net.Conn) {
     // application sends us a SOCKS4 request
     req, err := readConnectRequest(locCon)
     if err != nil {
-        log.Fatal(err)
+        log.Println(err)
+        return
     }
 
     // we send them back an "approved" response
     err = sendConnectResp(locCon)
     if err != nil {
-        log.Fatal(err)
+        log.Println(err)
+        return
     }
 
     log.Println(req.String())
@@ -28,8 +31,10 @@ func HandleCon(locCon net.Conn) {
     // dial the requested destination
     remCon, err := net.Dial("tcp", req.DestAddr())
     if err != nil {
-        log.Fatal(err)
+        log.Println(err)
+        return
     }
+    defer remCon.Close()
 
     var localReader, remoteReader io.Reader
     // if plaintext, tee to stdout
@@ -39,13 +44,21 @@ func HandleCon(locCon net.Conn) {
         localReader = io.TeeReader(locCon, os.Stdout)
         remoteReader = io.TeeReader(remCon, os.Stdout)
     } else {
-        // if encrypted, don't tee to stdout
         localReader = locCon
         remoteReader = remCon
-    }
+     }
 
-    go io.Copy(remCon, localReader)
-    go io.Copy(locCon, remoteReader)
+    var wg sync.WaitGroup
+    wg.Add(2)
+    go func() {
+        defer wg.Done()
+        io.Copy(remCon, localReader)
+    }()
+    go func() {
+        defer wg.Done()
+        io.Copy(locCon, remoteReader)
+    }()
+    wg.Wait()
 }
 
 type command int
@@ -72,26 +85,23 @@ func (req *ConReq) String() string {
     return fmt.Sprintf("%s -> %s", clientAddr, req.DestAddr())
 }
 
-// todo: i want c to be a net.Conn and an io.Reader, so new type?
 func readConnectRequest(c net.Conn) (conReq *ConReq, err error) {
-    r := bufio.NewReader(c)
-    
-    // read first 8 bytes from the connection
-    var b [8]byte
-    _, err = io.ReadFull(r, b[:])
-    if err != nil {
-        log.Fatal(err)
+    // read first 9 bytes from the connection
+    var b [9]byte
+    n, err := c.Read(b[:])
+    if n != 9 || err != nil {
+        return nil, errors.New("not enough in req")
     }
 
     // only socks v4 for now
     if b[0] != '\x04' {
-        log.Fatal("not version 4", b[0])
+        return nil, errors.New("not socks 4")
     }
 
     req := new(ConReq)
 
     if b[1] != 1 && b[1] != 2 {
-        log.Fatal("invalid command", b[1])
+        return nil, errors.New("bad command")
     }
 
     req.cmd = command(b[1])
@@ -110,8 +120,8 @@ func sendConnectResp(c net.Conn) error {
 }
 
 func main() {
-    // Listen on TCP port 2000 on all interfaces.
-    l, err := net.Listen("tcp", ":2000")
+    // Listen on TCP port 2000 on loopback interface
+    l, err := net.Listen("tcp", "127.0.0.1:2000")
     if err != nil {
         log.Fatal(err)
     }
@@ -119,9 +129,11 @@ func main() {
     for {
         conn, err := l.Accept()
         if err != nil {
-            log.Fatal(err)
+            log.Println(err)
         }
-        defer conn.Close()
-        go HandleCon(conn)
+        go func() {
+            defer conn.Close()
+            HandleCon(conn)
+        }()
     }
 }
